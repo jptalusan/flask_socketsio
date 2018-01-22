@@ -3,6 +3,9 @@ Hello
 git clone https://github.com/linusmotu/flask_socketsio.git  
 cd flask_socketsio  
 virtualenv venv  
+. venv/bin/activate
 pip install -r requirements.txt  
 python main.py  
+
+http://163.221.68.234:5000
 
