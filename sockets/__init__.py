@@ -9,8 +9,9 @@ eventlet.monkey_patch()
 
 app = Flask(__name__)
 socketio = SocketIO(app)
-app.config['MQTT_BROKER_URL'] = 'localhost'
+app.config['MQTT_BROKER_URL'] = '163.221.68.234'
 app.config['MQTT_BROKER_PORT'] = 1883
+
 mqtt = Mqtt(app)
 
 from sockets import views, websockets

@@ -1,0 +1,14 @@
+h1 {
+    color: black;
+    font-variant-caps: all-small-caps;
+    font-size: 46px;
+}
+
+body {
+    background: #a79d9d;
+}
+
+span.error {
+    color: red;
+    text-align: center;
+}
