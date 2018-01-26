@@ -4,14 +4,18 @@ import json
 from flask import Flask
 from flask_socketio import SocketIO
 from flask_mqtt import Mqtt
+from config import Config
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 eventlet.monkey_patch()
 
 app = Flask(__name__)
 socketio = SocketIO(app)
-app.config['MQTT_BROKER_URL'] = '163.221.68.234'
-app.config['MQTT_BROKER_PORT'] = 1883
+app.config.from_object(Config)
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 mqtt = Mqtt(app)
 
-from sockets import views, websockets
+from sockets import views, websockets, models
