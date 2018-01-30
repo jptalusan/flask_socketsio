@@ -73,10 +73,17 @@ $(document).ready(function() {
             var div = document.getElementById('status');
             div.parentNode.removeChild(div);
         }
-        console.log(data.length);
-        for (i = 0; i < data.length; ++i) { 
-            var obj = JSON.parse(data[i]);
-            console.log('receiving message via mqtt ' + obj.ipaddress);
+
+        var parse_json = JSON.parse(data)
+        console.log(parse_json.length);
+        console.log(parse_json)
+
+        for (i = 0; i < parse_json.length; ++i) {
+            console.log(parse_json[i].nodename)
+            console.log(parse_json[i].datafile)
+            console.log(parse_json[i].status)
+            console.log(parse_json[i].ipaddress)
+            console.log(parse_json[i].masternode_name)
             var div;
             if ($('#status').length <= 0) {
                 div = document.createElement('div');
@@ -88,26 +95,29 @@ $(document).ready(function() {
             //div.innerHTML += obj.ipaddress;
             var nodeDiv = document.createElement('div');
             nodeDiv.id = 'node' + i;
-            nodeDiv.innerHTML += '<h2>' + obj.node + '</h2>';
+            nodeDiv.innerHTML += '<h2>' + parse_json[i].nodename + '</h2>';
             
             var list = document.createElement('ul');
             list.id = 'node' + i + 'List';
 
             var ipaddress = document.createElement('li');
-            ipaddress.innerHTML += obj.ipaddress;
+            ipaddress.innerHTML += parse_json[i].ipaddress;
 
             var status = document.createElement('li');
-            status.innerHTML += obj.status;
+            status.innerHTML += parse_json[i].status;
 
-            var availability = document.createElement('li');
-            availability.innerHTML += obj.availability;
+            var datafile = document.createElement('li');
+            datafile.innerHTML += parse_json[i].datafile;
+
+            var masternode = document.createElement('li');
+            masternode.innerHTML += parse_json[i].masternode_name;
 
             div.appendChild(nodeDiv);
             nodeDiv.appendChild(list);
             list.appendChild(ipaddress);
             list.appendChild(status);
-            list.appendChild(availability);
-
+            list.appendChild(datafile);
+            list.appendChild(masternode);
         }
     });
 });

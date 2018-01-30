@@ -3,6 +3,7 @@ from sockets import socketio, mqtt
 from flask_socketio import send, emit
 import datetime
 import time
+import pickle
 
 #from sockets import parser 
 from sockets.parser import Parser
@@ -74,7 +75,9 @@ def handle_mqtt_message(client, userdata, message):
         # print(data['payload'])
         p.insert_or_update(data['payload'])
         p.test()
+
+        json_str = p.generateJSON()
         # get all data from DB and send as list? to emit
-        # socketio.emit('mqtt_query_response', data=datalist)
+        socketio.emit('mqtt_query_response', data = json_str)
     else:
         socketio.emit('mqtt_message', data=data)

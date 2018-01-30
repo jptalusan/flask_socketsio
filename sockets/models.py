@@ -1,4 +1,5 @@
 from sockets import db
+import json
 
 class Masternode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -9,7 +10,13 @@ class Masternode(db.Model):
     slaves = db.relationship('Slavenode', backref='masternode', lazy=True)
 
     def __repr__(self):
-        return 'Master: nodename:{0}, ipaddress:{1}, status:{2}, datafile:{3}'.format(self.nodename, self.ipaddress, self.status, self.datafile)
+        output = {}
+        output['nodename'] = self.nodename
+        output['ipaddress'] = self.ipaddress
+        output['status'] = self.status
+        output['datafile'] = self.datafile
+        output['masternode_name'] = "none"
+        return json.dumps(output)
 
 class Slavenode(db.Model):
     __tablename__ = 'slavenode'
@@ -22,4 +29,11 @@ class Slavenode(db.Model):
     masternode_id = db.Column(db.Integer, db.ForeignKey('masternode.id'))
 
     def __repr__(self):
-        return 'Slave: nodename:{0}, ipaddress:{1}, status:{2}, datafile:{3}, masternode:{4}'.format(self.nodename, self.ipaddress, self.status, self.datafile, self.masternode)
+        output = {}
+        output['nodename'] = self.nodename
+        output['ipaddress'] = self.ipaddress
+        output['status'] = self.status
+        output['datafile'] = self.datafile
+        output['masternode_name'] = self.masternode_name
+        
+        return json.dumps(output)

@@ -1,6 +1,7 @@
 from sockets import db
 from sockets.models import Slavenode, Masternode
-import json
+
+from json import dumps, loads
 
 class Parser:
     def __init__(self):
@@ -76,7 +77,7 @@ class Parser:
         db.session.commit()
 
     def insert_or_update(self, json_str):
-        data = json.loads(json_str)
+        data = loads(json_str)
         # print(data)
         if 'master' in data['nodename']:
             mn = Masternode.query.filter_by(nodename=data['nodename']).first()
@@ -100,10 +101,10 @@ class Parser:
             db.session.commit()
         elif 'node' in data['nodename']:
             snode = Slavenode.query.filter_by(nodename=data['nodename']).first()
+            slaveMaster = data['master']
+            mn = Masternode.query.filter_by(nodename=slaveMaster).first()
             if snode is None:
                 #insert
-                slaveMaster = data['master']
-                mn = Masternode.query.filter_by(nodename=slaveMaster).first()
                 if mn is not None:
                     #check if master node placed in master key exists if yes, get it and then add
                     sn = Slavenode(nodename=data['nodename'], datafile='empty', status=data['status'], ipaddress=data['ipaddress'], masternode=mn, masternode_name=data['master'])
@@ -113,8 +114,6 @@ class Parser:
                 db.session.add(sn)
                 db.session.commit()
             else:
-                slaveMaster = data['master']
-                mn = Masternode.query.filter_by(nodename=slaveMaster).first()
                 if mn is not None:
                     #check if master node placed in master key exists if yes, get it and then add
                     snode.masternode = mn
@@ -125,3 +124,35 @@ class Parser:
             #for slave nodes
         else:
             pass
+
+    def generateJSON(self):
+        snodes = Slavenode.query.all()
+        mnodes = Masternode.query.all()
+        
+        l = []
+        for snode in snodes:
+            d = {}
+            print(snode.nodename)
+            d['nodename'] = snode.nodename
+            d['status'] = snode.status
+            d['ipaddress'] = snode.ipaddress
+            d['datafile'] = snode.datafile
+            d['masternode_name'] = snode.masternode_name
+            l.append(d)
+
+        d = {}
+        for mnode in mnodes:
+            d['nodename'] = mnode.nodename
+            d['status'] = mnode.status
+            d['ipaddress'] = mnode.ipaddress
+            d['datafile'] = mnode.datafile
+            d['masternode_name'] = 'none'
+            l.append(d)
+
+        json_str = dumps(l)
+        print(json_str)
+        return json_str
+
+    def check_node_availability(self):
+        pass
+        
