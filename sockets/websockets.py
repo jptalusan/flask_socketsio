@@ -1,6 +1,11 @@
 import json
 from sockets import socketio, mqtt
 from flask_socketio import send, emit
+import datetime
+import time
+
+#from sockets import parser 
+from sockets.parser import Parser
 
 datalist = []
 
@@ -31,11 +36,18 @@ def handle_mqtt_unsubscribe(json_str):
     data = json.loads(json_str)
     mqtt.unsubscribe(data['topic'])
 
+@socketio.on('deleteDB')
+def handle_delete_DB(json_str):
+    p = Parser()
+    p.deleteDB()
+    print('Deleted all entries in DB')
+
 @socketio.on('mqtt_query_nodes')
 def handle_mqtt_query_nodes(json_str):
     data = json.loads(json_str)
     mqtt.subscribe(data['topic'])
     mqtt.publish('slave/query/flask', 'query')
+    mqtt.publish('master/query/flask', 'query')
     global datalist
     datalist = []
 
@@ -50,12 +62,19 @@ def handle_mqtt_message(client, userdata, message):
         topic=message.topic,
         payload=message.payload.decode()
     )
-    global datalist
-    datalist.append(data['payload'])
-    print('Message received via mqtt: {0}', format(data))
-    print('current list: {0}', format(datalist))
-    print(data['topic']) 
+    # global datalist
+    # datalist.append(data['payload'])
+    # print('Message received via mqtt: {0}', format(data))
+    # print('current list: {0}', format(datalist))
+    st = datetime.datetime.fromtimestamp(time.time()).strftime('%H:%M:%S')
+    print(st)
+    print(data['payload']) 
     if 'flask/query' in data['topic']:
-        socketio.emit('mqtt_query_response', data=datalist)
+        p = Parser()
+        # print(data['payload'])
+        p.insert_or_update(data['payload'])
+        p.test()
+        # get all data from DB and send as list? to emit
+        # socketio.emit('mqtt_query_response', data=datalist)
     else:
         socketio.emit('mqtt_message', data=data)

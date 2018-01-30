@@ -50,6 +50,11 @@ $(document).ready(function() {
         console.log('on unsubscribe button click ' + data);
     });
 
+    $("#deleteDB").click(function() {
+        socket.emit('deleteDB', "hello");
+        console.log('on deleteDB');
+    });
+
     $("#startMaster").click(function() {
         var data = "{\"topic\":\"master/start/flask\", \"payload\":\"start training\"}";
         socket.emit('mqtt startMaster', data);
