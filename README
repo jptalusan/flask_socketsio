@@ -9,5 +9,11 @@ python main.py
 
 or instead of virtualenv venv use: python3 -m venv venv  
 
-http://163.221.68.234:5000
+http://163.221.68.234:5000  
+
+Setting up of databases:  
+export FLASK_APP=main.py  
+flask db init  
+flask db migrate  
+flask db upgrade  
 
