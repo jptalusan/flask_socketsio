@@ -7,5 +7,7 @@ virtualenv venv
 pip install -r requirements.txt  
 python main.py  
 
+or instead of virtualenv venv use: python3 -m venv venv  
+
 http://163.221.68.234:5000
 
