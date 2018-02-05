@@ -10,7 +10,7 @@ from flask_migrate import Migrate
 
 eventlet.monkey_patch()
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 socketio = SocketIO(app)
 app.config.from_object(Config)
 db = SQLAlchemy(app)

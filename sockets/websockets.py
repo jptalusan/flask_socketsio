@@ -55,6 +55,8 @@ def handle_mqtt_query_nodes(json_str):
 @socketio.on('mqtt startMaster')
 def handle_mqtt_unsubscribe(json_str):
     data = json.loads(json_str)
+    p = Parser()
+    
     mqtt.publish(data['topic'], data['payload'])
 
 @mqtt.on_message()

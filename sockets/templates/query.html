@@ -13,6 +13,11 @@
     <button id="deleteDB">Clear DB</button><br>
     <button id="query">Query nodes</button><br>
     <button id="startMaster">Start training and validation</button><br>
+    <br>
+    <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+        Select a file: <input type="file" name="upload" />
+        <input type="submit" value="UPLOAD"/>
+    </form>
 
 </div>
 {% endblock %}
