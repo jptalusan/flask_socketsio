@@ -1,4 +1,42 @@
 $(document).ready(function() {
+    client = new Paho.MQTT.Client(location.hostname, Number(1884), "clientId");
+    // set callback handlers
+    client.onConnectionLost = onConnectionLost;
+    client.onMessageArrived = onMessageArrived;
+
+    // connect the client
+    client.connect({onSuccess:onConnect});
+
+
+    // called when the client connects
+    function onConnect() {
+      // Once a connection has been made, make a subscription and send a message.
+      console.log("onConnect");
+      client.subscribe("flask/+/#");
+      // message = new Paho.MQTT.Message("Hello");
+      // message.destinationName = "World";
+      // client.send(message);
+    }
+
+    // called when the client loses its connection
+    function onConnectionLost(responseObject) {
+      if (responseObject.errorCode !== 0) {
+        console.log("onConnectionLost:"+responseObject.errorMessage);
+      }
+    }
+
+    // called when a message arrives
+    function onMessageArrived(message) {
+      console.log("onMessageArrived:"+message.payloadString);
+      console.log("onMessageArrived:"+message.topic);
+      topic = "flask/master/config";
+      if (topic.localeCompare(message.topic) == 0) {
+        console.log("flask/master/config:"+message.payloadString);
+        var p = document.getElementById('masterConfig');
+        p.innerHTML = message.payloadString;
+      }
+    }
+
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     
     socket.on('connect', function() {
@@ -38,6 +76,12 @@ $(document).ready(function() {
         $('#mqtt').html('<p>' + data.payload + '</p>');
     });
 
+    $("#getMasterConfig").click(function() {
+      message = new Paho.MQTT.Message("get configs");
+      message.destinationName = "master/config/get";
+      client.send(message);
+    });
+
     $("#subscribe").click(function() {
         var data =  "{\"topic\":\"hello/world\"}";
         socket.emit('mqtt subscribe', data);
@@ -74,6 +118,8 @@ $(document).ready(function() {
             div.parentNode.removeChild(div);
         }
 
+        left = document.getElementById('left');
+        
         var parse_json = JSON.parse(data)
         console.log(parse_json.length);
         console.log(parse_json)
@@ -88,7 +134,7 @@ $(document).ready(function() {
             if ($('#status').length <= 0) {
                 div = document.createElement('div');
                 div.id = 'status';
-                document.body.appendChild(div);
+                left.appendChild(div);
             } else {
                 div = document.getElementById('status');
             }

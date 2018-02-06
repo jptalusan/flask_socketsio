@@ -12,6 +12,7 @@ datalist = []
 
 @socketio.on('client_connected')
 def handle_client_connect_event(json):
+    mqtt.subscribe('master/lastWill/#')
     print('received json: {0}'.format(str(json)))
 
 @socketio.on('alert_button')
@@ -49,8 +50,6 @@ def handle_mqtt_query_nodes(json_str):
     mqtt.subscribe(data['topic'])
     mqtt.publish('slave/query/flask', 'query')
     mqtt.publish('master/query/flask', 'query')
-    global datalist
-    datalist = []
 
 @socketio.on('mqtt startMaster')
 def handle_mqtt_unsubscribe(json_str):
@@ -81,5 +80,11 @@ def handle_mqtt_message(client, userdata, message):
         json_str = p.generateJSON()
         # get all data from DB and send as list? to emit
         socketio.emit('mqtt_query_response', data = json_str)
+    elif 'master/lastWill' in data['topic']:
+        p = Parser()
+        p.deleteDB()
+        print('Deleted all entries in DB')
+        mqtt.publish('slave/query/flask', 'query')
+        mqtt.publish('master/query/flask', 'query')
     else:
         socketio.emit('mqtt_message', data=data)
