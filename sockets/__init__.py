@@ -1,4 +1,4 @@
-import eventlet
+#import eventlet
 import json
 
 from flask import Flask
