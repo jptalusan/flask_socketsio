@@ -1,11 +1,19 @@
 import os
-from sockets import app
-from flask import render_template, request, send_from_directory, url_for, redirect, flash
+from flask import render_template, request, send_from_directory, url_for, redirect, flash, Response
 from werkzeug.utils import secure_filename
 from flask import current_app
 import subprocess
 import json
+from sockets import app
 from sockets import mqtt
+from sockets import Camera
+
+def gen(camera):
+    """Video streaming generator function."""
+    while True:
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'csv', 'jpg', 'jpeg', 'png'])
 def allowed_file(filename):
@@ -75,3 +83,13 @@ def uploaded_file(filename):
     uploads = os.path.join(current_app.root_path, 'uploads')
     print(uploads)
     return send_from_directory(directory = uploads, filename = filename)
+
+@app.route('/live')
+def live():
+    return render_template('live.html')
+
+@app.route('/video_feed')
+def video_feed():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return Response(gen(Camera()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')

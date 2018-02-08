@@ -7,15 +7,17 @@ from flask_mqtt import Mqtt
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from importlib import import_module
 
-eventlet.monkey_patch()
+#eventlet.monkey_patch()
 
 app = Flask(__name__, static_url_path='/static')
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode="threading")
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 mqtt = Mqtt(app)
+Camera = import_module('sockets.camera_pi').Camera
 
 from sockets import views, websockets, models
