@@ -1,4 +1,4 @@
-from sockets import app, socketio, db
+from sockets import db, create_app
 from sockets import mqtt
 import threading
 from datetime import datetime
@@ -18,9 +18,12 @@ def show_time ():
   mqtt.publish('hello/world', time)
 
 if __name__ == "__main__":
-    do_every(5, show_time)
+    #do_every(5, show_time)
+    app = create_app('development')
     socketio.run(app, host='163.221.68.234', port=5001, debug=True, use_reloader=True)
 
+'''
 @app.shell_context_processor
 def make_shell_context():
     return {'db': db, 'Masternode': Masternode, 'Slavenode': Slavenode}
+'''
