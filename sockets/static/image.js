@@ -34,6 +34,7 @@ $(document).ready(function() {
     $("#start_bench").click(function() {
         console.log('starting bench...');
         socket.emit('bench_switch', 0);
+        window.location.reload();
     });
 
     $("#stop_bench").click(function() {
