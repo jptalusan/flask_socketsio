@@ -23,4 +23,21 @@ $(document).ready(function() {
             // img.src = 'data:image/jpeg;base64,' + btoa(data);
         }
     });
+
+    socket.on('fps_data', function(data) {
+        var parse_json = JSON.parse(data)
+        document.getElementById("elapsed").textContent = "Time elapsed: " + parse_json.elapsed;
+        document.getElementById("fps").textContent = "FPS: " + parse_json.fps;
+        // console.log(parse_json);
+    });
+
+    $("#start_bench").click(function() {
+        console.log('starting bench...');
+        socket.emit('bench_switch', 0);
+    });
+
+    $("#stop_bench").click(function() {
+        console.log('stopping bench...');
+        socket.emit('bench_switch', 1);
+    });
 });

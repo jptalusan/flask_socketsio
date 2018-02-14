@@ -18,7 +18,7 @@ def show_time ():
   mqtt.publish('hello/world', time)
 
 if __name__ == "__main__":
-    do_every(5, show_time)
+    # do_every(5, show_time)
     socketio.run(app, host='163.221.68.224', port=5001, debug=True, use_reloader=False)
 
 @app.shell_context_processor
