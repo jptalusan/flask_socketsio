@@ -7,6 +7,11 @@ import json
 from sockets import app
 from sockets import mqtt
 from sockets import Camera
+import jsonpickle
+import base64
+import numpy as np
+from sockets import socketio, mqtt
+import cv2
 
 def gen(camera):
     """Video streaming generator function."""
@@ -87,6 +92,41 @@ def uploaded_file(filename):
 @app.route('/live')
 def live():
     return render_template('live.html')
+
+@app.route('/img_test')
+def img_test():
+    return render_template('test.html')
+
+def gen2(camera):
+    camera.resolution = (640, 480)
+    frame = camera.get_frame()
+    yield frame
+
+@app.route('/api/test', methods=['POST'])
+def test():
+    r = request
+    
+    # convert string of image data to uint8
+    nparr = np.fromstring(r.data, np.uint8)
+    # decode image
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    cv2.imwrite(os.path.join(app.config['UPLOAD_FOLDER'],'person.jpg'), img)
+    # do some fancy processing here....
+
+    data = np.array(img)
+
+    # build a response dict to send back to client
+    socketio.emit('detected_image', r.data)
+    # socketio.emit('detected_image', b64)
+    response = {'message': 'image received: size={}x{}'.format(img.shape[1], img.shape[0])}
+    # encode response using jsonpickle
+    response_pickled = jsonpickle.encode(response)
+
+    return Response(response=response_pickled, status=200, mimetype="application/json")
+
+@app.route('/image.jpg')
+def shot():
+    return Response(gen2(Camera()), mimetype='image/jpeg')
 
 @app.route('/video_feed')
 def video_feed():

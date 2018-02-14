@@ -38,6 +38,10 @@ def handle_mqtt_unsubscribe(json_str):
     data = json.loads(json_str)
     mqtt.unsubscribe(data['topic'])
 
+@socketio.on('detected_image')
+def handle_mqtt_unsubscribe(b64):
+    print(b64)
+
 @socketio.on('deleteDB')
 def handle_delete_DB(json_str):
     p = Parser()
