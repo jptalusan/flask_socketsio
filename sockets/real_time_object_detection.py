@@ -11,9 +11,9 @@ import datetime
 from sockets.websockets import datalist
 
 global_bench_camera_control = 0
-number_of_nodes = 4
+number_of_nodes = 1
 
-node_frames = [[1, 12], [2, 8], [3, 5], [4, 2]]
+node_frames = [[1, 26], [2, 8], [3, 5], [4, 2]]
 
 # CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
 #     "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
