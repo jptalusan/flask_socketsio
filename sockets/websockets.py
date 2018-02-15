@@ -66,15 +66,16 @@ def handle_mqtt_unsubscribe(json_str):
 def handle_mqtt_message(client, userdata, message):
     data = dict(
         topic=message.topic,
-        payload=message.payload.decode()
+        payload = message.payload.decode()
+        # payload=pickle.loads(message.payload)#.decode()
     )
     # global datalist
     # datalist.append(data['payload'])
     # print('Message received via mqtt: {0}', format(data))
     # print('current list: {0}', format(datalist))
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%H:%M:%S')
-    print(st)
-    print(data['payload']) 
+    # print(st)
+    # print(data['payload']) 
     if 'flask/query' in data['topic']:
         p = Parser()
         # print(data['payload'])
@@ -90,5 +91,10 @@ def handle_mqtt_message(client, userdata, message):
         print('Deleted all entries in DB')
         mqtt.publish('slave/query/flask', 'query')
         mqtt.publish('master/query/flask', 'query')
+    elif 'hello/server' in data['topic']:
+        print(data['topic'])
+        print('Time before send to JS: {}'.format(datetime.datetime.now()))
+        # datalist.append(data['payload'])
+        socketio.emit('processed_image_by_slave', data=data['payload'])
     else:
         socketio.emit('mqtt_message', data=data)

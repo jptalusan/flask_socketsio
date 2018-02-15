@@ -38,7 +38,7 @@ def classify_frame(net, inputQueue, outputQueue):
             # detector and obtain the detections
             net.setInput(blob)
             detections = net.forward()
- 
+            print(type(detections))
             # write the detections to the output queue
             outputQueue.put(detections)
 
@@ -92,6 +92,12 @@ def bench_rt(camera):
         frame = cv2.imdecode(np.fromstring(test, dtype=np.uint8), 1)
 
         frame = imutils.resize(frame, width=400)
+
+        #before detect
+        img_str = cv2.imencode(".jpg", frame)
+        send_data = base64.b64encode(img_str[1].tostring())
+        mqtt.publish('hello/world', send_data)
+        
         (fH, fW) = frame.shape[:2]
 
         # if the input queue *is* empty, give the current frame to
@@ -106,6 +112,13 @@ def bench_rt(camera):
         # draw the detections on the frame)
         if detections is not None:
             # loop over the detections
+            # print(list(zip(*detections))[0])
+            # print(detections.dtype)
+            # print(detections.ndim)
+            # print(detections.size)
+            # print(detections.shape)
+            # print(detections.strides)
+            # print(detections.shape[2])
             for i in np.arange(0, detections.shape[2]):
                 # extract the confidence (i.e., probability) associated
                 # with the prediction
@@ -115,7 +128,6 @@ def bench_rt(camera):
                 # is greater than the minimum confidence
                 if confidence < 0.2:
                     continue
-     
                 # otherwise, extract the index of the class label from
                 # the `detections`, then compute the (x, y)-coordinates
                 # of the bounding box for the object
@@ -137,8 +149,8 @@ def bench_rt(camera):
         #and this one
         img_str = cv2.imencode(".jpg", frame)
 
-        send_data = base64.b64encode(img_str[1].tostring())
-        mqtt.publish('hello/world', send_data)
+        # send_data = base64.b64encode(img_str[1].tostring())
+        # mqtt.publish('hello/world', send_data)
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
