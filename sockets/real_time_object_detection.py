@@ -9,45 +9,128 @@ import base64
 import json
 import datetime
 from sockets.websockets import datalist
+import os
+
+from threading import Thread
+from queue import Queue
 
 global_bench_camera_control = 0
-number_of_nodes = 1
+number_of_nodes = 4
 
-node_frames = [[1, 26], [2, 8], [3, 5], [4, 2]]
+node_frames = [[1, 26], [2, 8], [3, 5], [4, 2], [5, 1]]
 
-# CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-#     "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-#     "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-#     "sofa", "train", "tvmonitor"]
-# # COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
-# COLORS = [[ 44.18937886, 246.96730454,  73.04242211],
-#        [250.12082477,  64.86789038, 127.30777312],
-#        [ 42.24136576,  58.37372156, 164.26309563],
-#        [223.06331711, 109.74376324, 155.80390287],
-#        [185.08709893, 226.65109253, 207.6055207 ],
-#        [236.07673731, 185.30827578, 202.81771854],
-#        [144.55106179, 144.33676777,  13.94532094],
-#        [187.12402101,  17.84717238, 169.79134966],
-#        [108.56370186,  11.93672853, 101.48437193],
-#        [242.67313174, 199.58060928, 105.16230962],
-#        [ 55.8721673 , 152.57844089,  10.81330649],
-#        [ 61.49715633, 202.01490572, 215.6031341 ],
-#        [ 46.84328774,  97.63950579,  45.02124015],
-#        [155.97362898, 170.12816067,  22.99799861],
-#        [ 84.17340808, 195.2619167 ,  15.89690156],
-#        [ 82.28596664, 101.00173901, 133.31767819],
-#        [157.12551971, 136.96627224, 219.19731213],
-#        [168.25525718,  46.68111693,  89.16807578],
-#        [ 41.48822204,  29.68208425, 244.29332197],
-#        [197.541347  , 106.32026389, 183.67652336],
-#        [203.44645816, 117.39418267, 127.80463932]]
+class FileVideoStream:
+    def __init__(self, path, queueSize=128):
+        # initialize the file video stream along with the boolean
+        # used to indicate if the thread should be stopped or not
+        self.stream = cv2.VideoCapture(path)
+        self.stopped = False
+
+        # initialize the queue used to store frames read from
+        # the video file
+        self.Q = Queue(maxsize=queueSize)
+
+    def start(self):
+        # start a thread to read frames from the file video stream
+        t = Thread(target=self.update, args=())
+        t.daemon = True
+        t.start()
+        return self
+
+    def update(self):
+        # keep looping infinitely
+        while True:
+            # if the thread indicator variable is set, stop the
+            # thread
+            if self.stopped:
+                return
+
+            # otherwise, ensure the queue has room in it
+            if not self.Q.full():
+                # read the next frame from the file
+                (grabbed, frame) = self.stream.read()
+
+                # if the `grabbed` boolean is `False`, then we have
+                # reached the end of the video file
+                if not grabbed:
+                    self.stop()
+                    return
+
+                # add the frame to the queue
+                self.Q.put(frame)
+
+    def read(self):
+        # return next frame in the queue
+        return self.Q.get()
+
+    def more(self):
+        # return True if there are still frames in the queue
+        return self.Q.qsize() > 0
+
+    def stop(self):
+        # indicate that the thread should be stopped
+        self.stopped = True
+
 
 @socketio.on('bench_switch')
 def bench_switch(flag):
     global global_bench_camera_control
     global_bench_camera_control = flag
 
-def bench(camera):     
+def vid_to_frames(video):
+    vidcap = cv2.VideoCapture(video)
+    count = 0
+    while vidcap.isOpened():
+        success, frame = vidcap.read()
+        if success:
+            frame = imutils.resize(frame, width=450)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame = np.dstack([frame, frame, frame])
+            cv2.putText(frame, "Slow Method", (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)  
+            yield (frame)
+            # print('success')
+        else:
+            print('unsuccess')
+            break
+    vidcap.release()
+
+def vid_to_frames_faster(video):
+    fvs = FileVideoStream(video).start()
+    time.sleep(1.0)
+    while fvs.more():
+        # grab the frame from the threaded video file stream, resize
+        # it, and convert it to grayscale (while still retaining 3
+        # channels)
+        frame = fvs.read()
+        frame = imutils.resize(frame, width=450)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = np.dstack([frame, frame, frame])
+     
+        # display the size of the queue on the frame
+        cv2.putText(frame, "Queue Size: {}".format(fvs.Q.qsize()),
+            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)    
+        
+        yield (frame)
+        # show the frame and update the FPS counter
+        # cv2.imshow("Frame", frame)
+        # cv2.waitKey(1)
+        # fps.update()
+
+def playback_from_file():
+    count = 0
+    #Two methods (seems same to me)
+    # frame = vid_to_frames('/home/pi/git/flask_socketsio/sockets/BigBuckBunny.mp4')
+    frame = vid_to_frames_faster('/home/pi/git/flask_socketsio/sockets/BigBuckBunny.mp4')
+    while True:
+        curr_frame = next(frame)
+        img_str = cv2.imencode(".jpg", curr_frame)
+        # cv2.imwrite(os.path.join('/home/pi/git/flask_socketsio/test', '%d.png') % count, curr_frame)
+        count += 1
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
+
+def bench(camera):
     print("[INFO] loading model...")
 
     time.sleep(2.0)
@@ -76,43 +159,7 @@ def bench(camera):
             if curr_node == number_of_nodes:
                 curr_node = 0
 
-        # (fH, fW) = frame.shape[:2]
-
-        # Change code to just send detections over mqtt
-        # https://stackoverflow.com/questions/24423162/how-to-send-an-array-over-a-socket-in-python
-        # if datalist:
-        #     print('Popping datalist...')
-        #     detections = datalist.pop(0)
-        #     # draw the detections on the frame)
-        #     if detections is not None:
-        #         print('Detecting...')
-        #         for i in np.arange(0, detections.shape[2]):
-        #             confidence = detections[0, 0, i, 2]
-        #             if confidence < 0.2:
-        #                 continue
-        #             idx = int(detections[0, 0, i, 1])
-        #             dims = np.array([fW, fH, fW, fH])
-        #             box = detections[0, 0, i, 3:7] * dims
-        #             (startX, startY, endX, endY) = box.astype("int")
-         
-        #             # draw the prediction on the frame
-        #             label = "{}: {:.2f}%".format(CLASSES[idx],
-        #                 confidence * 100)
-        #             cv2.rectangle(frame, (startX, startY), (endX, endY),
-        #                 COLORS[idx], 2)
-        #             y = startY - 15 if startY - 15 > 15 else startY + 15
-        #             cv2.putText(frame, label, (startX, y),
-        #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
-        #     else:
-        #         print('Detection is null...')
-        # else:
-        #     print('Datalist is empty...')
-
         img_str = cv2.imencode(".jpg", frame)
-
-        #or after detect
-        # send_data = base64.b64encode(img_str[1].tostring())
-        # mqtt.publish('hello/world', send_data)
 
         fps.update()
 
