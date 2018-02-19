@@ -12,3 +12,26 @@ span.error {
     color: red;
     text-align: center;
 }
+
+table{
+    table-layout: fixed;
+    white-space: normal;
+}
+
+td {
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.imageContainer {
+    float: left;
+}
+
+p {
+    text-align: center;
+}
+
+.cellContainer {
+  width: 2%;
+  float: left;
+}

@@ -8,16 +8,17 @@ from sockets import socketio, mqtt
 import base64
 import json
 import datetime
-from sockets.websockets import datalist
 import os
+import time
 
 from threading import Thread
 from queue import Queue
 
 global_bench_camera_control = 0
-number_of_nodes = 4
-
-node_frames = [[1, 26], [2, 8], [3, 5], [4, 2], [5, 1]]
+number_of_nodes = 5
+first_run = True
+# node_frames = [[1, 20], [2, 12], [3, 6], [4, 3], [5, 2]]
+node_frames = [[1, 20], [2, 7], [3, 4], [4, 2], [5, 1]]
 
 class FileVideoStream:
     def __init__(self, path, queueSize=128):
@@ -131,41 +132,118 @@ def playback_from_file():
                b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
 
 def bench(camera):
-    print("[INFO] loading model...")
+    socketio.emit('number_of_nodes', number_of_nodes)
+    # print("[INFO] loading model...")
 
-    time.sleep(2.0)
+    # time.sleep(2.0)
     fps = FPS().start()
-
+    
+    frames_for_fps = 0
+    time_for_fps = time.time()
+    first_run = True
     frame_cnt = 0
     curr_node = 0
     # since 18 frames a second, and detection is ~1 fps. only send every 18 frames
     while True:
         test = camera.get_frame()
-
+        # print('number of nodes: {}'.format(number_of_nodes))
         frame = cv2.imdecode(np.fromstring(test, dtype=np.uint8), 1)
         frame = imutils.resize(frame, width=400)
+        node_cnt = number_of_nodes
 
-        #before detect
-        # img_str = cv2.imencode(".jpg", frame)
-        frame_cnt = frame_cnt + 1
-        if (frame_cnt % (node_frames[number_of_nodes - 1][0] * node_frames[number_of_nodes - 1][1]) == 0):
-            print('Time before first send: {}'.format(datetime.datetime.now()))
-            send_data = base64.b64encode(test)
-            # send_to_node = 'hello/world0'
-            send_to_node = 'hello/world' + str(curr_node)
-            mqtt.publish(send_to_node, send_data)
-            frame_cnt = 1
-            curr_node = curr_node + 1
-            if curr_node == number_of_nodes:
-                curr_node = 0
+        if first_run and node_cnt == 0:
+            frames_for_fps = 0
+            time_for_fps = time.time()
+            CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
+                "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+                "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+                "sofa", "train", "tvmonitor"]
+            COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
+             
+            # load our serialized model from disk
+            print("[INFO] loading model...")
+            net = cv2.dnn.readNetFromCaffe('/home/pi/git/flask_socketsio/sockets/MobileNetSSD_deploy.prototxt', '/home/pi/git/flask_socketsio/sockets/MobileNetSSD_deploy.caffemodel')
+            first_run = False
 
-        img_str = cv2.imencode(".jpg", frame)
+        if node_cnt is 0:
+            frame_cnt = frame_cnt + 1
 
-        fps.update()
+            if frame_cnt % 10 == 0:
+                (h, w) = frame.shape[:2]
+                blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
+                    0.007843, (300, 300), 127.5)
+             
+                net.setInput(blob)
+                detections = net.forward()
 
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
-     
+                # data = pickle.dumps(detections)
+
+                for i in np.arange(0, detections.shape[2]):
+                    confidence = detections[0, 0, i, 2]
+                    if confidence > 0.2:
+                        idx = int(detections[0, 0, i, 1])
+                        box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                        (startX, startY, endX, endY) = box.astype("int")
+
+                        label = "{}: {:.2f}%".format(CLASSES[idx],
+                            confidence * 100)
+                        cv2.rectangle(frame, (startX, startY), (endX, endY),
+                            COLORS[idx], 2)
+                        y = startY - 15 if startY - 15 > 15 else startY + 15
+                        cv2.putText(frame, label, (startX, y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
+
+                img_str = cv2.imencode(".jpg", frame)
+
+                fps.update()
+                frames_for_fps += 1
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
+             
+            curr_time = time.time()
+            difference = int(curr_time - time_for_fps)
+            if difference != 0:
+                curr_fps = (frames_for_fps * 1.0) / difference
+                # print('FPS:{}'.format(str(curr_fps)))
+                curr_fps_str = '{0:.2f}'.format(curr_fps)
+                data = {"elapsed": difference, "fps": curr_fps_str}
+                socketio.emit('fps_data', json.dumps(data))
+        else:
+            #before detect
+            # img_str = cv2.imencode(".jpg", frame)
+            frame_cnt = frame_cnt + 1
+            if (frame_cnt % (node_frames[node_cnt - 1][0] * node_frames[node_cnt - 1][1]) == 0):
+                # print('Time before first send: {}'.format(datetime.datetime.now()))
+                time_sent = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                send_data = base64.b64encode(test)
+
+                base64_string = send_data.decode('utf-8')
+                data = {"image": base64_string, "time_sent": time_sent}
+
+                # send_to_node = 'hello/world0'
+                send_to_node = 'hello/world' + str(curr_node)
+                mqtt.publish(send_to_node, json.dumps(data))
+                frame_cnt = 1
+                curr_node = curr_node + 1
+                if curr_node == node_cnt or curr_node > node_cnt:
+                    curr_node = 0
+
+            img_str = cv2.imencode(".jpg", frame)
+
+            fps.update()
+            frames_for_fps += 1
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
+         
+            curr_time = time.time()
+            difference = int(curr_time - time_for_fps)
+            if difference != 0:
+                curr_fps = (frames_for_fps * 1.0) / difference
+                # print('FPS:{}'.format(str(curr_fps)))
+                curr_fps_str = '{0:.2f}'.format(curr_fps)
+                data = {"elapsed": difference, "fps": curr_fps_str}
+                socketio.emit('fps_data', json.dumps(data))
+
         if global_bench_camera_control == 1:
             break
      

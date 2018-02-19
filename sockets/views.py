@@ -12,7 +12,7 @@ import base64
 import numpy as np
 from sockets import socketio, mqtt
 from sockets.real_time_object_detection import bench
-# from sockets.pi_object_detection import bench_rt
+from sockets.pi_object_detection import bench_rt
 
 def gen(camera):
     """Video streaming generator function."""
@@ -144,5 +144,7 @@ def benchmark_vid():
 # Can use either bench() or bench_rt()
 @app.route('/benchmark')
 def benchmark():
+    num = request.cookies.get('number_of_nodes2')
+    print('nodes: {}', num)
     return Response(bench(Camera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')

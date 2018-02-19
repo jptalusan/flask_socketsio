@@ -81,6 +81,9 @@ def bench_rt(camera):
     time.sleep(2.0)
     fps = FPS().start()
 
+    detected_frame_count = 0
+    captured_frame_count = 0
+    time_for_fps = time.time()
     # loop over the frames from the video stream
     while True:
         # grab the frame from the threaded video stream, resize it, and
@@ -88,6 +91,7 @@ def bench_rt(camera):
         # frame = vs.read()
 
         test = camera.get_frame()
+        captured_frame_count += 1
         #probably because o this extra step
         frame = cv2.imdecode(np.fromstring(test, dtype=np.uint8), 1)
 
@@ -111,14 +115,7 @@ def bench_rt(camera):
 
         # draw the detections on the frame)
         if detections is not None:
-            # loop over the detections
-            # print(list(zip(*detections))[0])
-            # print(detections.dtype)
-            # print(detections.ndim)
-            # print(detections.size)
-            # print(detections.shape)
-            # print(detections.strides)
-            # print(detections.shape[2])
+            detected_frame_count += 1
             for i in np.arange(0, detections.shape[2]):
                 # extract the confidence (i.e., probability) associated
                 # with the prediction
@@ -154,6 +151,17 @@ def bench_rt(camera):
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
+
+        curr_time = time.time()
+        difference = int(curr_time - time_for_fps)
+        if difference != 0:
+            curr_fps = (detected_frame_count * 1.0) / difference
+            raw_fps = (captured_frame_count * 1.0) / difference
+            print('det FPS:{}'.format(str(curr_fps)))
+            print('raw FPS:{}'.format(str(curr_fps)))
+            curr_fps_str = '{0:.2f}'.format(curr_fps)
+            data = {"elapsed": difference, "fps": curr_fps_str}
+            socketio.emit('fps_data', json.dumps(data))
 
         # cv2.imshow("Frame", frame)
         # key = cv2.waitKey(1) & 0xFF
