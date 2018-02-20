@@ -13,12 +13,14 @@ import time
 
 from threading import Thread
 from queue import Queue
+import matplotlib.pyplot as plt
+import numpy as np
 
 global_bench_camera_control = 0
 number_of_nodes = 5
 first_run = True
 # node_frames = [[1, 20], [2, 12], [3, 6], [4, 3], [5, 2]]
-node_frames = [[1, 20], [2, 7], [3, 4], [4, 2], [5, 1]]
+node_frames = [[1, 20], [2, 7], [3, 4], [4, 2], [5, 1.2]]
 
 class FileVideoStream:
     def __init__(self, path, queueSize=128):
@@ -72,11 +74,12 @@ class FileVideoStream:
         # indicate that the thread should be stopped
         self.stopped = True
 
-
 @socketio.on('bench_switch')
 def bench_switch(flag):
+    print('switch pressed in realtime.py')
     global global_bench_camera_control
     global_bench_camera_control = flag
+    curr_node = 0
 
 def vid_to_frames(video):
     vidcap = cv2.VideoCapture(video)
@@ -130,6 +133,30 @@ def playback_from_file():
         count += 1
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + img_str[1].tostring() + b'\r\n')
+
+def generate_plot():
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    # ax1.set_yticks(np.arange(min(duration), max(duration) + 5, 5))
+    print(duration)
+    # if len(duration) == 1:
+    ax1.set_ylim([duration[0] - duration[0]/2, duration[0] + duration[0]/2])
+    # ax1.plot(iterations, duration, linestyle=':', marker='x', color='b')
+    ax1.bar(iterations, duration, align='center', alpha=0.5)# linestyle=':', marker='x', color='b')
+    ax1.set_ylabel('Duration(s)', fontsize=14)
+
+    ax2 = ax1.twinx()
+    # ax2.set_yticks(np.arange(0.2, 1.2, 0.1))
+    ax2.plot(iterations, accuracy, linestyle='--', marker='o', color='r')
+    ax2.set_ylim([0.5, 1.0])
+    ax2.set_ylabel('Duration(s)', fontsize=14)
+    for tl in ax2.get_yticklabels():
+        tl.set_color('r')
+
+    plt.setp(ax2.get_yticklabels(), visible=True)
+    ax1.set_xlabel('iterations', fontsize=14)
+    ax1.set_xticks(np.arange(min(iterations), max(iterations) + 1, 1))
+    plt.savefig(img)
 
 def bench(camera):
     socketio.emit('number_of_nodes', number_of_nodes)
@@ -195,6 +222,12 @@ def bench(camera):
 
                 img_str = cv2.imencode(".jpg", frame)
 
+                # time_sent = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                # fh = open("0 nodes.txt","a")
+                # fh.write(time_sent)
+                # fh.write('\r\n')
+                # fh.close()
+
                 fps.update()
                 frames_for_fps += 1
                 yield (b'--frame\r\n'
@@ -225,7 +258,7 @@ def bench(camera):
                 mqtt.publish(send_to_node, json.dumps(data))
                 frame_cnt = 1
                 curr_node = curr_node + 1
-                if curr_node == node_cnt or curr_node > node_cnt:
+                if curr_node % node_cnt == 0:
                     curr_node = 0
 
             img_str = cv2.imencode(".jpg", frame)
@@ -245,8 +278,9 @@ def bench(camera):
                 socketio.emit('fps_data', json.dumps(data))
 
         if global_bench_camera_control == 1:
+            print('should stop here...')
             break
-     
+
     # stop the timer and display FPS information
     fps.stop()
     print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))

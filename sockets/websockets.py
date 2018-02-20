@@ -160,9 +160,14 @@ def handle_mqtt_message(client, userdata, message):
 
         # last resort: just finish in a loop before moving on and appending
         #option 2 : slow but not failing easily? or not failing intensely
+        # fh = open("0 nodes.txt","a")
+        # fh.write(json_str['time_sent'])
+        # fh.write('\r\n')
+        # fh.close()
         datalist.append(images(json_str['image'], json_str['time_sent']))
         datalist.sort(reverse=True)
         earliest_in_queue = datalist.pop()
+        datalist.clear()
         socketio.emit('processed_image_by_slave', data=earliest_in_queue.image_string)
 
         #option 1: fails after some time

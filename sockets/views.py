@@ -12,7 +12,7 @@ import base64
 import numpy as np
 from sockets import socketio, mqtt
 from sockets.real_time_object_detection import bench
-from sockets.pi_object_detection import bench_rt
+# from sockets.pi_object_detection import bench_rt
 import matplotlib.pyplot as plt
 from io import BytesIO
 
@@ -178,7 +178,7 @@ def video_feed():
 def benchmark_vid():
     mqtt.subscribe('hello/server')
     print('subscribe to hello/server')
-    return render_template('benchmark_vid.html')
+    return render_template('benchmark_vid.html', header='Distributed DNN OpenCV')
 
 # Can use either bench() or bench_rt()
 @app.route('/benchmark')

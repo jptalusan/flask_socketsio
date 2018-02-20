@@ -1,52 +1,44 @@
-<html>
-    <head>
-        {% if title %}
-        <title>{{ title }} - Near Cloud</title>
-        {% else %}
-        <title>Welcome to Near Cloud</title>
-        {% endif %}
-<!--         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script> -->
-        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js.cookie.min.js') }}"></script>
-        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='jquery.min.js') }}"></script>
-        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='image.js') }}"></script>
-        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='paho-mqtt.js') }}"></script>
-        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
-    </head>
-    <body>
-        <h1>DNN opencv benchmark</h1>
-        <div class="image123" style="width: 100vw; margin-left: calc(-50vw + 50%);float: center;">
-            <div class="imageContainer">
-                <img src="{{ url_for('benchmark') }}"><br>
-                <span id="elapsed"> 0.0 </span><br>
-                <span id="fps"> 0.0 </span><br>
-            </div>
-            <div class="cellContainer">
-                <div style="margin: 5px;"></div>
-            </div>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page">
+
+
+    <section class="container">
+      <div class="left-half">
+        <article>
+          <h1>Pi Camera</h1>
+                <div class="imageContainer">
+                    <img src="{{ url_for('benchmark') }}"><br>
+                    <span id="elapsed"> 0.0 </span><br>
+                    <span id="fps"> 0.0 </span><br>
+                </div>
+                      <img class="graph" src="{{ url_for('static', filename='figure.png') }}">
+
+        </article>
+      </div>
+      <div class="right-half">
+        <article>
+          <h1>Detected via DNN</h1>
             <div class="imageContainer">
                 <img id="detected_video"><br>
                 <span id="det_elapsed"> 0.0 </span><br>
                 <span id="det_fps"> 0.0 </span><br>
             </div>
-        </div>
-        
-        <div id="barChart_div" style="width: 100vw; height: 250px;float:left;margin-left: calc(-50vw + 50%);">
-            <button id="start_bench">Start benchmark</button><br>
-            <button id="stop_bench">Stop benchmark</button><br>
-            <div style="float:left;width:100vw;">
-                <br><br><br>
-                Number of nodes running:<br>
-                <form>
-                    0<input type="radio" name="opt" id="radio" value="0">
-                    1<input type="radio" name="opt" id="radio" value="1">
-                    2<input type="radio" name="opt" id="radio" value="2">
-                    3<input type="radio" name="opt" id="radio" value="3">
-                    4<input type="radio" name="opt" id="radio" value="4">
-                    5<input type="radio" name="opt" id="radio" value="5">
-                </form>
-            </div>
-        </div>
-    </body>
-</html>
+                <button id="start_bench">Start benchmark</button>
+    <button id="stop_bench">Stop benchmark</button><br>
+    Number of nodes running:<br>
+    <form>
+        0<input type="radio" name="opt" id="radio" value="0">
+        1<input type="radio" name="opt" id="radio" value="1">
+        2<input type="radio" name="opt" id="radio" value="2">
+        3<input type="radio" name="opt" id="radio" value="3">
+        4<input type="radio" name="opt" id="radio" value="4">
+        5<input type="radio" name="opt" id="radio" value="5">
+    </form>
+        </article>
+      </div>
+
+    </section>
+</div>
+{% endblock %}
