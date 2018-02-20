@@ -6,10 +6,12 @@
         {% else %}
         <title>Welcome to Near Cloud</title>
         {% endif %}
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
-        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='app.js') }}"></script>
+        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js.cookie.min.js') }}"></script>
+        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='image.js') }}"></script>
         <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='paho-mqtt.js') }}"></script>
+        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='app.js') }}"></script>
         <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
     </head>
     <body>
