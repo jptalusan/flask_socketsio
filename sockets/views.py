@@ -1,5 +1,5 @@
 import os
-from flask import render_template, request, send_from_directory, url_for, redirect, flash, Response
+from flask import render_template, request, send_from_directory, url_for, redirect, flash, Response, send_file
 from werkzeug.utils import secure_filename
 from flask import current_app
 import subprocess
@@ -13,6 +13,8 @@ import numpy as np
 from sockets import socketio, mqtt
 from sockets.real_time_object_detection import bench
 from sockets.pi_object_detection import bench_rt
+import matplotlib.pyplot as plt
+from io import BytesIO
 
 def gen(camera):
     """Video streaming generator function."""
@@ -28,7 +30,7 @@ def allowed_file(filename):
 
 @app.route('/')
 def index():
-    return render_template('query.html')
+    return render_template('query.html', header='CONTROL PANEL')
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -48,13 +50,47 @@ def upload():
             return redirect(url_for('uploaded_file', filename = filename))
         return redirect(url_for('index'))
 
+@app.route('/fig')
+def fig():
+    # #fig = draw_polygons(cropzonekey)
+    # fig = plt.plot([1,2,3,4], [1,2,3,4])
+    # #img = StringIO()
+    # img = BytesIO()
+    # #fig.savefig(img)
+    # plt.savefig(img)
+    # img.seek(0)
+
+    x = []
+    y1 = []
+    y2 = []
+
+    x.append(1)
+    y1.append(33102)
+    y2.append(0.9802)
+    # y1 = np.sin(x);
+    # y2 = 0.01 * np.cos(x);
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.plot(x, y1, linestyle='--', marker='o', color='b')
+    ax1.set_ylabel('Duration(ms)', fontsize=14)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, y2, '--ro')
+    ax2.set_ylabel('accuracy', color='r', fontsize=14)
+    for tl in ax2.get_yticklabels():
+        tl.set_color('r')
+    img = BytesIO()
+    ax1.set_xlabel('iterations', fontsize=14)
+    plt.savefig(img)
+    img.seek(0)
+
+    return send_file(img, mimetype='image/png')
+
 @app.route('/update_configs', methods=['POST'])
 def update_configs():
-    changes = request.form['text']
-
+    changes = request.form['text'].replace('\r', '').replace('\n', '')
     # check if key exists before updating
-    # with open('configs.json') as json_data:
-    #     d = json.load(json_data)
 
     if 'toMaster' in request.form:
         print(changes)
@@ -64,6 +100,9 @@ def update_configs():
         mqtt.publish('master/config/flask', changes)
         flash('Successfully sent to master')
     elif 'toSlaves' in request.form:
+        if 'nodeName' in changes:
+            flash('Don\'t change nodeName for slaves')
+            return redirect(url_for('index'))
         print(changes)
         # os.chdir("/home/pi/random_pi_forest/distRF/bin/slave_node/")
         # command = 'jq \'. + {{{0}}}\' configs.json > configs.tmp && mv configs.tmp configs.json'.format(changes)

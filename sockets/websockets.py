@@ -8,11 +8,18 @@ import sockets.real_time_object_detection
 from flask import make_response
 from base64 import b64encode
 import collections
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+import numpy as np
 
 #from sockets import parser 
 from sockets.parser import Parser
 datalist = []
 images_deque = collections.deque()
+accuracy = []
+duration = []
+iterations = []
 
 @socketio.on('client_connected')
 def handle_client_connect_event(json):
@@ -74,7 +81,9 @@ def handle_mqtt_query_nodes(json_str):
 def handle_mqtt_unsubscribe(json_str):
     data = json.loads(json_str)
     p = Parser()
-    
+    iterations.clear()
+    duration.clear()
+    accuracy.clear()
     mqtt.publish(data['topic'], data['payload'])
 
 class images(object):
@@ -90,6 +99,37 @@ class images(object):
 
     def __lt__(self, other):
         return self.time_sent < other.time_sent
+
+def generate_plot():
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    # ax1.set_yticks(np.arange(min(duration), max(duration) + 5, 5))
+    print(duration)
+    # if len(duration) == 1:
+    ax1.set_ylim([duration[0] - duration[0]/2, duration[0] + duration[0]/2])
+    # ax1.plot(iterations, duration, linestyle=':', marker='x', color='b')
+    ax1.bar(iterations, duration, align='center', alpha=0.5)# linestyle=':', marker='x', color='b')
+    ax1.set_ylabel('Duration(s)', fontsize=14)
+
+    ax2 = ax1.twinx()
+    # ax2.set_yticks(np.arange(0.2, 1.2, 0.1))
+    ax2.plot(iterations, accuracy, linestyle='--', marker='o', color='r')
+    ax2.set_ylim([0.5, 1.0])
+    ax2.set_ylabel('Duration(s)', fontsize=14)
+    for tl in ax2.get_yticklabels():
+        tl.set_color('r')
+    img = BytesIO()
+
+    plt.setp(ax2.get_yticklabels(), visible=True)
+    ax1.set_xlabel('iterations', fontsize=14)
+    ax1.set_xticks(np.arange(min(iterations), max(iterations) + 1, 1))
+    plt.savefig(img)
+    img.seek(0)
+
+
+    plot_url = base64.b64encode(img.getvalue()).decode()
+
+    return plot_url
 
 @mqtt.on_message()
 def handle_mqtt_message(client, userdata, message):
@@ -139,5 +179,14 @@ def handle_mqtt_message(client, userdata, message):
         #     earliest_in_queue = images_deque.pop()
 
         # socketio.emit('processed_image_by_slave', data=earliest_in_queue['image'])
+    elif 'flask/master/update' in data['topic']:
+        json_str = json.loads(data['payload'])
+        print(json_str)
+        secs = int(json_str['currRunTime']) / 1000.0
+        duration.append(secs)
+        accuracy.append(float(json_str['accuracy']))
+        iterations.append(len(duration))
+        plt_str = generate_plot()
+        socketio.emit('show_graph', data=plt_str)
     else:
         socketio.emit('mqtt_message', data=data)

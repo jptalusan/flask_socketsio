@@ -1,3 +1,22 @@
+function syntaxHighlight(json) {
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        var cls = 'number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'key';
+            } else {
+                cls = 'string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'boolean';
+        } else if (/null/.test(match)) {
+            cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+}
+
 $(document).ready(function() {
     client = new Paho.MQTT.Client(location.hostname, Number(1884), "clientId");
     // set callback handlers
@@ -31,9 +50,10 @@ $(document).ready(function() {
       console.log("onMessageArrived:"+message.topic);
       topic = "flask/master/config";
       if (topic.localeCompare(message.topic) == 0) {
-        console.log("flask/master/config:"+message.payloadString);
+        console.log("flask/master/config:" + message.payloadString);
         var p = document.getElementById('masterConfig');
-        p.innerHTML = message.payloadString;
+        var obj = JSON.parse(message.payloadString);
+        p.innerHTML = syntaxHighlight(JSON.stringify(obj, null, 2));
       }
     }
 
@@ -58,6 +78,19 @@ $(document).ready(function() {
     
     socket.on('my event', function(data) {
         console.log('message from backend ' + data);
+    });
+
+    socket.on('show_graph', function(data) {
+        if ($('#graph').length <= 0) {
+            var img = document.createElement('img');
+            img.id = "graph";
+            img.src = 'data:image/jpeg;base64,' + data;
+
+            document.body.appendChild(img);
+        } else {
+            img = document.getElementById('graph');
+            img.src = 'data:image/jpeg;base64,' + data;
+        }
     });
 
     $("#jsonbutton").click(function() {
@@ -121,15 +154,15 @@ $(document).ready(function() {
         left = document.getElementById('left');
         
         var parse_json = JSON.parse(data)
-        console.log(parse_json.length);
-        console.log(parse_json)
+        // console.log(parse_json.length);
+        // console.log(parse_json)
 
         for (i = 0; i < parse_json.length; ++i) {
-            console.log(parse_json[i].nodename)
-            console.log(parse_json[i].datafile)
-            console.log(parse_json[i].status)
-            console.log(parse_json[i].ipaddress)
-            console.log(parse_json[i].masternode_name)
+            // console.log(parse_json[i].nodename)
+            // console.log(parse_json[i].datafile)
+            // console.log(parse_json[i].status)
+            // console.log(parse_json[i].ipaddress)
+            // console.log(parse_json[i].masternode_name)
             var div;
             if ($('#status').length <= 0) {
                 div = document.createElement('div');

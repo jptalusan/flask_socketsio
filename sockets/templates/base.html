@@ -13,13 +13,23 @@
         <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
     </head>
     <body>
+        {% if header %}
+        <h1>{{ header }} - Near Cloud</h1>
+        {% else %}
+        <h1>Welcome to Near Cloud</h1>
+        {% endif %}
         <div class="container">
-            {% for message in get_flashed_messages() %}
-            <div class="alert alert-warning">
-                <button type="button" class="close" data-dismiss="alert">&times</button>
-                {{ message }}
-            </div>
-            {% endfor %}
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <ul>
+                {% for message in messages %}
+                <li>
+                    <p id="flash">{{ message }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </div>
     </body>
